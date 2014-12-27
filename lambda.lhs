@@ -20,7 +20,11 @@ consider this file a sample of Illiterate Haskell.
 
 Here goes nothing.
 
+
+
 ------------------------
+
+
 
 A "name" is just a string used as an identifier and bound in an environment. So
 we alias `Name` to `[Char]`:
@@ -71,7 +75,7 @@ Yay, recursion! Environment lookups are all about traversing the chain and
 hoping you find the key before you hit root.
 
 > envLookup :: Name -> Environment -> Lambda
-> envLookup n (Root) = error "Yikes."
+> envLookup n (Root) = error $ "Yikes, I couldn't find the name " ++ n
 > envLookup n (Environment key value parent) = if n == key then value else (envLookup n parent)
 
 Cool. So now we can actually write the interpreter. It takes an AST and returns
@@ -91,11 +95,51 @@ Each type of AST node gets its own handler:
 
 And finally, we wrap that all up in the Root environment frame.
 
+> eval :: Expression -> Lambda
 > eval exp = evalExp Root exp
+
+
+
+----------------------------------
+
 
 Let's provide a test-case.
 
 > y = (Call (MakeLambda "P" (Call (EnvRef "P") (EnvRef "P"))) (MakeLambda "Q" (EnvRef "Q")))
 
+Now we can use this framework to compile more complicated expressions to the
+lambda calculus. define defines a name and then executes some other lambda with
+that name bound.
+
+> define :: Name -> Expression -> Expression -> Expression
+> define name value next = (Call (MakeLambda name next) value)
+
+Let's make a curried lambda:
+
+> cl :: [Name] -> Expression -> Expression
+> cl [n] body = MakeLambda n body
+> cl (n:rest) body = MakeLambda n (cl rest body)
+
+and a curried call:
+
+> cc :: Expression -> [Expression] -> Expression
+> cc e [arg] = (Call e arg)
+> cc e (arg:rest) = cc (Call e  arg) rest
+
+And now we can write cool programs in the lambda calculus!
+
+> prog =
+>   define "true"  (cl ["t", "f"] (EnvRef "t")) $
+>   define "false" (cl ["t", "f"] (EnvRef "f")) $
+>   define "if"  (cl ["cond", "t", "f"] (cc (EnvRef "cond") [(EnvRef "t"), (EnvRef "f")])) $
+>   define "and" (cl ["a", "b"] (cc (EnvRef "if") [(EnvRef "a"), (EnvRef "b"),     (EnvRef "false")])) $
+>   define "or"  (cl ["a", "b"] (cc (EnvRef "if") [(EnvRef "a"), (EnvRef "true"),  (EnvRef "b")])) $
+>   define "not" (cl ["a"]      (cc (EnvRef "if") [(EnvRef "a"), (EnvRef "false"), (EnvRef "true")])) $
+>   (cc (EnvRef "and") [(EnvRef "true"), (EnvRef "true")])
+
+Eh, might as well put in a `main` to execute:
+
 > main = do  
->   putStrLn $ show $ eval y
+>   putStrLn $ show prog
+>   putStrLn "...evaluates to..."
+>   putStrLn $ show $ eval prog
