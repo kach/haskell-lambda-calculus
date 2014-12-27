@@ -1,0 +1,1 @@
+ghc lambda.lhs && ./lambda
