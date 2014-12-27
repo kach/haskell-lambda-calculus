@@ -135,7 +135,7 @@ And now we can write cool programs in the lambda calculus!
 >   define "and" (cl ["a", "b"] (cc (EnvRef "if") [(EnvRef "a"), (EnvRef "b"),     (EnvRef "false")])) $
 >   define "or"  (cl ["a", "b"] (cc (EnvRef "if") [(EnvRef "a"), (EnvRef "true"),  (EnvRef "b")])) $
 >   define "not" (cl ["a"]      (cc (EnvRef "if") [(EnvRef "a"), (EnvRef "false"), (EnvRef "true")])) $
->   (cc (EnvRef "and") [(EnvRef "true"), (EnvRef "true")])
+>   (cc (EnvRef "and") [(cc (EnvRef "not") [(EnvRef "false")]), (cc (EnvRef "or") [(EnvRef "true"), (EnvRef "false")])])
 
 Eh, might as well put in a `main` to execute:
 
